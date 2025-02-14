@@ -1,0 +1,20 @@
+// schema.prisma
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")  // URL do MongoDB
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Produto {
+   id          String    @id @default(auto()) @map("_id") @db.ObjectId  // Added @db.ObjectId
+  nome        String
+  descricao   String
+  preco       Float
+  imagem      String
+  promocao    Boolean @default(false)
+  createdAt   DateTime @default(now())
+}
