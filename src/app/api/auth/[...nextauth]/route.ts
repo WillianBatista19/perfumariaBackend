@@ -11,7 +11,6 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
-          // ✅ Verificando se credentials não é undefined
           if (!credentials || !credentials.username || !credentials.password) {
             console.log("Credenciais inválidas");
             return null;
@@ -19,21 +18,18 @@ export const authOptions = {
 
           console.log("Credenciais recebidas:", credentials);
 
-          // ✅ Validação de usuário e senha
           if (credentials.username === "admin" && credentials.password === "123456") {
             return { id: "1", name: "Admin" };
           }
-          
-          // Se não for o admin, retorna null
+
           return null;
-        } catch (error: unknown) {
+        } catch (error) {
           if (error instanceof Error) {
-            // Logando o erro caso ocorra
             console.error("Erro ao autenticar:", error.stack);
           } else {
             console.error("Erro desconhecido:", error);
           }
-          return null; // Retorna null caso ocorra algum erro
+          return null;
         }
       },
     }),
@@ -41,4 +37,6 @@ export const authOptions = {
 };
 
 const handler = NextAuth(authOptions);
+
+// Next.js 13 com App Directory requer que você exporte os métodos GET e POST
 export { handler as GET, handler as POST };
