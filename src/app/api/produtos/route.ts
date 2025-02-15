@@ -1,23 +1,43 @@
+import sharp from "sharp";
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Ajuste para o caminho correto do seu Prisma
+import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 
-// Função para salvar a imagem na pasta public/images
-const salvarImagem = async (imagem: File) => {
+// Configurações de otimização de imagem
+const IMAGE_CONFIG = {
+  maxWidth: 1200,      // Largura máxima
+  quality: 80,         // Qualidade da compressão (0-100)
+  format: 'webp'       // Formato de saída
+} as const;
+
+// Função para otimizar e salvar a imagem
+const otimizarESalvarImagem = async (imagem: File, id: string) => {
   const pastaDestino = path.join(process.cwd(), "public", "images");
 
   if (!fs.existsSync(pastaDestino)) {
     fs.mkdirSync(pastaDestino, { recursive: true });
   }
 
-  const nomeArquivo = `${Date.now()}-${imagem.name}`;
+  const nomeArquivo = `${id}-${imagem.name.replace(/\.[^/.]+$/, '')}.${IMAGE_CONFIG.format}`;
   const caminhoImagem = path.join(pastaDestino, nomeArquivo);
 
-  const imagemBuffer = Buffer.from(await imagem.arrayBuffer());
-  fs.writeFileSync(caminhoImagem, imagemBuffer);
+  try {
+    const buffer = Buffer.from(await imagem.arrayBuffer());
 
-  return `images/${nomeArquivo}`; // Caminho relativo para ser salvo no banco
+    await sharp(buffer)
+      .resize({
+        width: IMAGE_CONFIG.maxWidth,
+        withoutEnlargement: true,
+      })
+      .webp({ quality: IMAGE_CONFIG.quality })
+      .toFile(caminhoImagem);
+
+    return `images/${nomeArquivo}`; // Corrigido para ser um caminho relativo
+  } catch (error) {
+    console.error("Erro ao otimizar imagem:", error);
+    throw new Error("Falha ao processar imagem");
+  }
 };
 
 // Método GET - Buscar todos os produtos
@@ -43,90 +63,32 @@ export async function POST(req: Request) {
     const imagemFile = formData.get("imagem") as File;
 
     if (!nome || !descricao || isNaN(preco) || !imagemFile) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
+      return NextResponse.json({ error: "Dados incompletos ou imagem não fornecida" }, { status: 400 });
     }
 
-    const imagemUrl = await salvarImagem(imagemFile);
-
+    // Cria o produto primeiro para obter o ID
     const novoProduto = await prisma.produto.create({
       data: {
         nome,
         descricao,
         preco,
         promocao,
-        imagem: imagemUrl,
-      },
+        imagem: "",  // Deixamos a imagem em branco por enquanto
+      }
     });
 
-    return NextResponse.json(novoProduto);
-  } catch (error) {
-    console.error("Erro ao criar produto:", error);
-    return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 });
-  }
-}
+    // Após a criação, otimiza e salva a imagem
+    const imagemUrl = await otimizarESalvarImagem(imagemFile, novoProduto.id);
 
-// Método PUT - Atualizar um produto existente
-export async function PUT(req: Request) {
-  try {
-    const formData = await req.formData();
-
-    const id = formData.get("id") as string;
-    const nome = formData.get("nome") as string;
-    const descricao = formData.get("descricao") as string;
-    const preco = parseFloat(formData.get("preco") as string);
-    const promocao = formData.get("promocao") === "true";
-    const imagemFile = formData.get("imagem") as File | null; // Pode ser opcional
-
-    if (!id || !nome || !descricao || isNaN(preco)) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
-    }
-
-    let imagemUrl;
-    if (imagemFile) {
-      imagemUrl = await salvarImagem(imagemFile);
-    }
-
+    // Atualiza o produto com a URL da imagem otimizada
     const produtoAtualizado = await prisma.produto.update({
-      where: { id },
-      data: {
-        nome,
-        descricao,
-        preco,
-        promocao,
-        ...(imagemUrl && { imagem: imagemUrl }), // Atualiza a imagem apenas se uma nova for enviada
-      },
+      where: { id: novoProduto.id },
+      data: { imagem: imagemUrl },
     });
 
     return NextResponse.json(produtoAtualizado);
   } catch (error) {
-    console.error("Erro ao atualizar produto:", error);
-    return NextResponse.json({ error: "Erro ao atualizar produto" }, { status: 500 });
-  }
-}
-
-// Método DELETE - Excluir um produto pelo ID
-export async function DELETE(req: Request) {
-  try {
-    const { id } = await req.json(); // Pega o ID do produto
-
-    if (!id) {
-      return NextResponse.json({ error: "ID do produto não fornecido" }, { status: 400 });
-    }
-
-    // Verifica se o produto existe antes de excluir
-    const produtoExistente = await prisma.produto.findUnique({ where: { id } });
-
-    if (!produtoExistente) {
-      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
-    }
-
-    await prisma.produto.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ message: "Produto excluído com sucesso" });
-  } catch (error) {
-    console.error("Erro ao excluir produto:", error);
-    return NextResponse.json({ error: "Erro ao excluir produto" }, { status: 500 });
+    console.error("Erro ao criar produto:", error);
+    return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 });
   }
 }

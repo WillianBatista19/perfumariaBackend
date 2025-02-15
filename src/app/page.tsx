@@ -53,7 +53,7 @@ export default function ProdutosPage() {
           <input
             type="text"
             placeholder="Buscar produtos..."
-            className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full pl-10 pr-4 py-3 rounded-lg border text-black border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -81,10 +81,12 @@ export default function ProdutosPage() {
               >
                 <div className="relative h-48">
                   <Image
+                    // Garantindo que o caminho da imagem seja consistente
                     src={produto.imagem.startsWith("http") ? produto.imagem : `/${produto.imagem}`}
                     alt={produto.nome}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    priority // Adiciona a prioridade para carregamento rápido
                   />
                   {produto.promocao && (
                     <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
