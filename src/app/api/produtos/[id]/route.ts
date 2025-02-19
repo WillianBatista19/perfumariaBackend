@@ -41,12 +41,11 @@ const otimizarESalvarImagem = async (imagem: File, id: string) => {
 };
 
 // Método PUT - Atualizar um produto existente
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest) {
   try {
-    const id = params.id;
+    // Acessa o id diretamente da URL
+    const { pathname } = req.nextUrl;
+    const id = pathname.split("/")[3]; // Se a URL for '/api/produtos/[id]', o id estará na 3ª posição
 
     // Verifica se o produto existe
     const produtoExistente = await prisma.produto.findUnique({
