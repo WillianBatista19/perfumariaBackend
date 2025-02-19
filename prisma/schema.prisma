@@ -10,11 +10,10 @@ generator client {
 }
 
 model Produto {
-   id          String    @id @default(auto()) @map("_id") @db.ObjectId  // Added @db.ObjectId
-  nome        String
-  descricao   String
-  preco       Float
-  imagem      String
-  promocao    Boolean @default(false)
-  createdAt   DateTime @default(now())
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  nome      String
+  descricao String
+  preco     Float
+  promocao  Boolean
+  imagem    String
 }

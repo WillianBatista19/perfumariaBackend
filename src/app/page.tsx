@@ -16,24 +16,38 @@ export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
     fetch("/api/produtos")
-      .then((res) => res.json())
-      .then((data) => {
-        setProdutos(data);
-        setIsLoading(false);
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        // Verifica se data é um array
+        if (Array.isArray(data)) {
+          setProdutos(data);
+        } else {
+          throw new Error('Dados recebidos não estão no formato esperado');
+        }
       })
       .catch((error) => {
         console.error("Erro ao carregar produtos:", error);
+        setError("Não foi possível carregar os produtos. Tente novamente mais tarde.");
+      })
+      .finally(() => {
         setIsLoading(false);
       });
   }, []);
 
-  const filteredProdutos = produtos.filter((produto) =>
-    produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Só filtra se produtos for um array
+  const filteredProdutos = searchTerm
+    ? produtos.filter((produto) =>
+        produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : produtos;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -72,6 +86,10 @@ export default function ProdutosPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500">{error}</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProdutos.map((produto) => (
@@ -81,12 +99,11 @@ export default function ProdutosPage() {
               >
                 <div className="relative h-48">
                   <Image
-                    // Garantindo que o caminho da imagem seja consistente
                     src={produto.imagem.startsWith("http") ? produto.imagem : `/${produto.imagem}`}
                     alt={produto.nome}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    priority // Adiciona a prioridade para carregamento rápido
+                    priority
                   />
                   {produto.promocao && (
                     <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
