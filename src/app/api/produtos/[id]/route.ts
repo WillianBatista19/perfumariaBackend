@@ -110,12 +110,16 @@ export async function PUT(req: NextRequest) {
 }
 
 // Método DELETE - Excluir um produto pelo ID
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { id } = await Promise.resolve(params);
+    // Acessa o id diretamente da URL
+    const { pathname } = req.nextUrl;
+    const id = pathname.split("/")[3]; // Se a URL for '/api/produtos/[id]', o id estará na 3ª posição
 
-    // Verifica se o produto existe antes de excluir
-    const produtoExistente = await prisma.produto.findUnique({ where: { id } });
+    // Verifica se o produto existe
+    const produtoExistente = await prisma.produto.findUnique({
+      where: { id }
+    });
 
     if (!produtoExistente) {
       return NextResponse.json(
@@ -124,22 +128,18 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       );
     }
 
-    // Remove a imagem se ela existir e não for uma URL externa
-    if (produtoExistente.imagem && !produtoExistente.imagem.startsWith('http')) {
-      const imagemPath = path.join(process.cwd(), "public", produtoExistente.imagem);
-      if (fs.existsSync(imagemPath)) {
-        fs.unlinkSync(imagemPath);
-      }
-    }
+    // Deleta o produto
+    await prisma.produto.delete({
+      where: { id }
+    });
 
-    // Exclui o produto do banco de dados
-    await prisma.produto.delete({ where: { id } });
-
-    return NextResponse.json({ message: "Produto excluído com sucesso" });
+    return NextResponse.json({
+      message: "Produto deletado com sucesso"
+    });
   } catch (error) {
-    console.error("Erro ao excluir produto:", error);
+    console.error("Erro ao deletar produto:", error);
     return NextResponse.json(
-      { error: "Erro ao excluir produto" },
+      { error: "Erro ao deletar produto" },
       { status: 500 }
     );
   }
