@@ -5,6 +5,7 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        domains: ["perfumaria-backend.vercel.app"],
       },
       // Adicione outros padrões se necessário
     ],
