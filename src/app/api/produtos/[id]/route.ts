@@ -42,7 +42,7 @@ const otimizarESalvarImagem = async (imagem: File, id: string) => {
 
 // Método PUT - Atualizar um produto existente
 export async function PUT(
-  req: NextRequest, 
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
