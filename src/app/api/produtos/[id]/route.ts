@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -41,9 +41,12 @@ const otimizarESalvarImagem = async (imagem: File, id: string) => {
 };
 
 // Método PUT - Atualizar um produto existente
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await Promise.resolve(params);
+    const id = params.id;
 
     // Verifica se o produto existe
     const produtoExistente = await prisma.produto.findUnique({
