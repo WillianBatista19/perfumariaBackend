@@ -98,13 +98,13 @@ export default function ProdutosPage() {
                 className="group bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
               >
                 <div className="relative h-48">
-                  <Image
-                    src={`/images/${produto.imagem.split('/').pop()}`}
-                    alt={produto.nome}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    priority
-                  />
+                <Image
+                  src={produto.imagem} // Agora já é uma URL completa, então não precisa alterar
+                  alt={produto.nome}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  priority
+                />
                   {produto.promocao && (
                     <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
                       Promoção
