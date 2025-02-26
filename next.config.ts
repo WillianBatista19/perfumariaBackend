@@ -4,10 +4,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: 'localhost',
-        domains: ["perfumaria-backend.vercel.app"],
+        hostname: 'localhost'
       },
-      // Adicione outros padrões se necessário
     ],
   },
 }
