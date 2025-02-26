@@ -1,44 +1,6 @@
-import sharp from "sharp";
+import { put } from '@vercel/blob';
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
-
-// Configurações de otimização de imagem
-const IMAGE_CONFIG = {
-  maxWidth: 1200,      // Largura máxima
-  quality: 80,         // Qualidade da compressão (0-100)
-  format: 'webp'       // Formato de saída
-} as const;
-
-// Função para otimizar e salvar a imagem
-const otimizarESalvarImagem = async (imagem: File, id: string) => {
-  const pastaDestino = path.join(process.cwd(), "public", "images");
-
-  if (!fs.existsSync(pastaDestino)) {
-    fs.mkdirSync(pastaDestino, { recursive: true });
-  }
-
-  const nomeArquivo = `${id}-${imagem.name.replace(/\.[^/.]+$/, '')}.${IMAGE_CONFIG.format}`;
-  const caminhoImagem = path.join(pastaDestino, nomeArquivo);
-
-  try {
-    const buffer = Buffer.from(await imagem.arrayBuffer());
-
-    await sharp(buffer)
-      .resize({
-        width: IMAGE_CONFIG.maxWidth,
-        withoutEnlargement: true,
-      })
-      .webp({ quality: IMAGE_CONFIG.quality })
-      .toFile(caminhoImagem);
-
-    return `images/${nomeArquivo}`; // Corrigido para ser um caminho relativo
-  } catch (error) {
-    console.error("Erro ao otimizar imagem:", error);
-    throw new Error("Falha ao processar imagem");
-  }
-};
 
 // Método GET - Buscar todos os produtos
 export async function GET() {
@@ -55,38 +17,47 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-
+    
     const nome = formData.get("nome") as string;
     const descricao = formData.get("descricao") as string;
     const preco = parseFloat(formData.get("preco") as string);
     const promocao = formData.get("promocao") === "true";
-    const imagemFile = formData.get("imagem") as File;
-
-    if (!nome || !descricao || isNaN(preco) || !imagemFile) {
-      return NextResponse.json({ error: "Dados incompletos ou imagem não fornecida" }, { status: 400 });
+    const imagemFile = formData.get("imagem") as File | null;
+    
+    if (!nome || !descricao || isNaN(preco)) {
+      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
-
-    // Cria o produto primeiro para obter o ID
+    
+    // Variável para armazenar a URL da imagem
+    let imagemUrl = "";
+    
+    // Se uma imagem foi enviada, faça upload para o Vercel Blob
+    if (imagemFile && imagemFile.size > 0) {
+      // Cria um nome para o arquivo com timestamp para evitar colisões
+      const fileName = `${Date.now()}-${imagemFile.name}`;
+      
+      // Faz upload para o Vercel Blob
+      const blob = await put(fileName, imagemFile, {
+        access: 'public',
+        addRandomSuffix: true // adiciona um sufixo aleatório para evitar conflitos
+      });
+      
+      // Obtém a URL da imagem
+      imagemUrl = blob.url;
+    }
+    
+    // Cria o produto com a URL da imagem do Vercel Blob
     const novoProduto = await prisma.produto.create({
       data: {
         nome,
         descricao,
         preco,
         promocao,
-        imagem: "",  // Deixamos a imagem em branco por enquanto
+        imagem: imagemUrl
       }
     });
-
-    // Após a criação, otimiza e salva a imagem
-    const imagemUrl = await otimizarESalvarImagem(imagemFile, novoProduto.id);
-
-    // Atualiza o produto com a URL da imagem otimizada
-    const produtoAtualizado = await prisma.produto.update({
-      where: { id: novoProduto.id },
-      data: { imagem: imagemUrl },
-    });
-
-    return NextResponse.json(produtoAtualizado);
+    
+    return NextResponse.json(novoProduto);
   } catch (error) {
     console.error("Erro ao criar produto:", error);
     return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 });

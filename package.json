@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/client": "^6.4.0",
     "@radix-ui/react-toast": "^1.2.6",
+    "@vercel/blob": "^0.27.1",
     "lucide-react": "^0.475.0",
     "multer": "^1.4.5-lts.1",
     "next": "15.1.7",

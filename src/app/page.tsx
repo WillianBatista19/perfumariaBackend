@@ -99,7 +99,7 @@ export default function ProdutosPage() {
               >
                 <div className="relative h-48">
                   <Image
-                    src={`/${produto.imagem.split('/').pop()}`}
+                    src={`/images/${produto.imagem.split('/').pop()}`}
                     alt={produto.nome}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"

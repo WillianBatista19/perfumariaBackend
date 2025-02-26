@@ -307,11 +307,7 @@ export default function AdminPage() {
                 className="flex items-center p-4 border rounded-lg hover:bg-gray-50"
               >
                 <Image
-                  src={
-                    produto.imagem.startsWith("http")
-                      ? produto.imagem
-                      : `/${produto.imagem}`
-                  }
+                  src={produto.imagem}
                   alt={produto.nome}
                   width={64}
                   height={64}

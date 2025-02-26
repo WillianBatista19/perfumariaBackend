@@ -1,44 +1,15 @@
+import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
-import sharp from "sharp";
 
-// Configurações de otimização de imagem
-const IMAGE_CONFIG = {
-  maxWidth: 1200,
-  quality: 80,
-  format: "webp",
-} as const;
-
-// Função para otimizar e salvar a imagem
-const otimizarESalvarImagem = async (imagem: File, id: string) => {
-  const pastaDestino = path.join(process.cwd(), "public", "images");
-
-  if (!fs.existsSync(pastaDestino)) {
-    fs.mkdirSync(pastaDestino, { recursive: true });
-  }
-
-  const nomeArquivo = `${id}-${imagem.name.replace(/\.[^/.]+$/, '')}.${IMAGE_CONFIG.format}`;
-  const caminhoImagem = path.join(pastaDestino, nomeArquivo);
-
-  try {
-    const buffer = Buffer.from(await imagem.arrayBuffer());
-
-    await sharp(buffer)
-      .resize({
-        width: IMAGE_CONFIG.maxWidth,
-        withoutEnlargement: true,
-      })
-      .webp({ quality: IMAGE_CONFIG.quality })
-      .toFile(caminhoImagem);
-
-    return `images/${nomeArquivo}`; // Corrigido para ser um caminho relativo
-  } catch (error) {
-    console.error("Erro ao otimizar imagem:", error);
-    throw new Error("Falha ao processar imagem");
-  }
-};
+// Interface para o tipo de atualização de produto
+interface ProdutoUpdateData {
+  nome: string;
+  descricao: string;
+  preco: number;
+  promocao: boolean;
+  imagem?: string;
+}
 
 // Método PUT - Atualizar um produto existente
 export async function PUT(req: NextRequest) {
@@ -74,21 +45,28 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Remove a imagem antiga se uma nova imagem foi enviada
-    if (imagemFile && produtoExistente.imagem && !produtoExistente.imagem.startsWith('http')) {
-      const imagemAntigaPath = path.join(process.cwd(), "public", produtoExistente.imagem);
-      if (fs.existsSync(imagemAntigaPath)) {
-        fs.unlinkSync(imagemAntigaPath);
-      }
-    }
-
-    const updateData = {
+    // Prepara os dados para atualização com o tipo correto
+    const updateData: ProdutoUpdateData = {
       nome,
       descricao,
       preco,
-      promocao,
-      ...(imagemFile ? { imagem: await otimizarESalvarImagem(imagemFile, id) } : {})
+      promocao
     };
+
+    // Se uma nova imagem foi enviada, faz upload para o Vercel Blob
+    if (imagemFile && imagemFile.size > 0) {
+      // Cria um nome para o arquivo com timestamp para evitar colisões
+      const fileName = `${Date.now()}-${id}-${imagemFile.name}`;
+      
+      // Faz upload para o Vercel Blob
+      const blob = await put(fileName, imagemFile, {
+        access: 'public',
+        addRandomSuffix: true
+      });
+      
+      // Adiciona a URL da imagem aos dados de atualização
+      updateData.imagem = blob.url;
+    }
 
     // Atualiza o produto no banco de dados
     const produtoAtualizado = await prisma.produto.update({
