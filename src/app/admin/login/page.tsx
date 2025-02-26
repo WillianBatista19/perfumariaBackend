@@ -21,7 +21,7 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Login Admin</h2>
+        <h2 className="text-2xl font-bold mb-4 text-black">Login Admin</h2>
         {error && <p className="text-red-500">{error}</p>}
         <input
           type="text"
