@@ -33,7 +33,7 @@ export default function AdminLogin() {
         <input
           type="password"
           placeholder="Senha"
-          className="w-full border p-2 mb-4 rounded"
+          className="w-full border p-2 mb-4 rounded text-black"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

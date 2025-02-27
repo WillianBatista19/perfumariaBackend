@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isAuth === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-600">Verificando autenticação...</p>
+        <p className="text-gray-900">Verificando autenticação...</p>
       </div>
     );
   }
